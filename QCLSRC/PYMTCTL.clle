@@ -1,0 +1,319 @@
+             PGM        PARM(&CUSTID &AMOUNT &FINALAMT &RETCODE)
+             
+             /* ================================================== */
+             /* Program: PYMTCTL - Payment Control Program (CL)   */
+             /* Purpose: Orchestrate payment processing workflow  */
+             /* ================================================== */
+             
+             DCL        VAR(&CUSTID) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&AMOUNT) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&FINALAMT) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&RETCODE) TYPE(*CHAR) LEN(2)
+             
+             DCL        VAR(&VALIDCODE) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&CUSTTYPE) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&LOYALTYPTS) TYPE(*DEC) LEN(9 0)
+             DCL        VAR(&TAXAMT) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&TAXRATE) TYPE(*DEC) LEN(5 2)
+             DCL        VAR(&PROCFEE) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&DISCAMT) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&DISCRATE) TYPE(*DEC) LEN(5 2)
+             DCL        VAR(&AUDITID) TYPE(*DEC) LEN(10 0)
+             DCL        VAR(&TRANID) TYPE(*CHAR) LEN(20)
+             DCL        VAR(&PYMTMETH) TYPE(*CHAR) LEN(2)
+             DCL        VAR(&GROSSAMT) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&NETAMT) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&TEMPAMT1) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&TEMPAMT2) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&TEMPAMT3) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&CALCAMT1) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&CALCAMT2) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&CALCAMT3) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&COUNTER) TYPE(*DEC) LEN(3 0)
+             DCL        VAR(&ITERATOR) TYPE(*DEC) LEN(3 0)
+             DCL        VAR(&LOOPIDX) TYPE(*DEC) LEN(3 0)
+             DCL        VAR(&STEPNUM) TYPE(*DEC) LEN(3 0)
+             DCL        VAR(&PHASENUM) TYPE(*DEC) LEN(2 0)
+             DCL        VAR(&STAGENUM) TYPE(*DEC) LEN(2 0)
+             DCL        VAR(&LEVELNUM) TYPE(*DEC) LEN(2 0)
+             DCL        VAR(&ERRORFLAG) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&WARNFLAG) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&VALIDFLAG) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&SUCCESSFLG) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&COMPLETFLG) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&PROCESFLG) TYPE(*CHAR) LEN(1)
+             DCL        VAR(&MSGID) TYPE(*CHAR) LEN(7)
+             DCL        VAR(&MSGDTA) TYPE(*CHAR) LEN(100)
+             DCL        VAR(&MSGF) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&MSGFLIB) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOBNAME) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOBUSER) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&JOBNBR) TYPE(*CHAR) LEN(6)
+             DCL        VAR(&CURRDATE) TYPE(*CHAR) LEN(8)
+             DCL        VAR(&CURRTIME) TYPE(*CHAR) LEN(6)
+             DCL        VAR(&TIMESTAMP) TYPE(*CHAR) LEN(26)
+             DCL        VAR(&MULTIPLR) TYPE(*DEC) LEN(9 4)
+             DCL        VAR(&DIVISOR) TYPE(*DEC) LEN(9 4)
+             DCL        VAR(&PERCENT) TYPE(*DEC) LEN(5 2)
+             DCL        VAR(&RATIO) TYPE(*DEC) LEN(9 4)
+             DCL        VAR(&FACTOR) TYPE(*DEC) LEN(9 4)
+             DCL        VAR(&THRESHOLD1) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&THRESHOLD2) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&THRESHOLD3) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&MINVALUE) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&MAXVALUE) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&AVGVALUE) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&SUMVALUE) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&COUNTVAL) TYPE(*DEC) LEN(9 0)
+             DCL        VAR(&VARIANCE) TYPE(*DEC) LEN(15 2)
+             DCL        VAR(&STDDEV) TYPE(*DEC) LEN(15 2)
+             
+             /* Initialize variables */
+             CHGVAR     VAR(&RETCODE) VALUE('00')
+             CHGVAR     VAR(&ERRORFLAG) VALUE('N')
+             CHGVAR     VAR(&WARNFLAG) VALUE('N')
+             CHGVAR     VAR(&VALIDFLAG) VALUE('N')
+             CHGVAR     VAR(&SUCCESSFLG) VALUE('N')
+             CHGVAR     VAR(&COMPLETFLG) VALUE('N')
+             CHGVAR     VAR(&PROCESFLG) VALUE('Y')
+             CHGVAR     VAR(&STEPNUM) VALUE(1)
+             CHGVAR     VAR(&PHASENUM) VALUE(1)
+             CHGVAR     VAR(&STAGENUM) VALUE(1)
+             CHGVAR     VAR(&LEVELNUM) VALUE(1)
+             CHGVAR     VAR(&COUNTER) VALUE(0)
+             CHGVAR     VAR(&ITERATOR) VALUE(0)
+             CHGVAR     VAR(&LOOPIDX) VALUE(0)
+             CHGVAR     VAR(&GROSSAMT) VALUE(&AMOUNT)
+             CHGVAR     VAR(&NETAMT) VALUE(0)
+             CHGVAR     VAR(&TAXAMT) VALUE(0)
+             CHGVAR     VAR(&TAXRATE) VALUE(18.00)
+             CHGVAR     VAR(&DISCAMT) VALUE(0)
+             CHGVAR     VAR(&DISCRATE) VALUE(0)
+             CHGVAR     VAR(&PROCFEE) VALUE(0)
+             CHGVAR     VAR(&AUDITID) VALUE(0)
+             CHGVAR     VAR(&LOYALTYPTS) VALUE(0)
+             CHGVAR     VAR(&PYMTMETH) VALUE('CC')
+             CHGVAR     VAR(&MULTIPLR) VALUE(1.0000)
+             CHGVAR     VAR(&DIVISOR) VALUE(1.0000)
+             CHGVAR     VAR(&FACTOR) VALUE(1.0000)
+             CHGVAR     VAR(&THRESHOLD1) VALUE(1000.00)
+             CHGVAR     VAR(&THRESHOLD2) VALUE(5000.00)
+             CHGVAR     VAR(&THRESHOLD3) VALUE(10000.00)
+             CHGVAR     VAR(&SUMVALUE) VALUE(0)
+             CHGVAR     VAR(&COUNTVAL) VALUE(0)
+             
+             /* Phase 1: Pre-processing calculations */
+             CHGVAR     VAR(&PHASENUM) VALUE(1)
+             CHGVAR     VAR(&STEPNUM) VALUE(1)
+             
+             CHGVAR     VAR(&LOOPIDX) VALUE(1)
+ LOOP1:      IF         COND(&LOOPIDX *LE 5) THEN(DO)
+                CHGVAR     VAR(&TEMPAMT1) VALUE(&GROSSAMT)
+                CHGVAR     VAR(&MULTIPLR) VALUE(&LOOPIDX)
+                CHGVAR     VAR(&TEMPAMT2) VALUE(&TEMPAMT1 * +
+                             (&MULTIPLR / 10))
+                CHGVAR     VAR(&SUMVALUE) VALUE(&SUMVALUE + &TEMPAMT2)
+                CHGVAR     VAR(&COUNTVAL) VALUE(&COUNTVAL + 1)
+                CHGVAR     VAR(&LOOPIDX) VALUE(&LOOPIDX + 1)
+                GOTO       CMDLBL(LOOP1)
+             ENDDO
+             
+             IF         COND(&COUNTVAL *GT 0) THEN(DO)
+                CHGVAR     VAR(&AVGVALUE) VALUE(&SUMVALUE / &COUNTVAL)
+             ENDDO
+             
+             /* Phase 2: Validation */
+             CHGVAR     VAR(&PHASENUM) VALUE(2)
+             CHGVAR     VAR(&STEPNUM) VALUE(2)
+             
+             IF         COND(&CUSTID *EQ ' ') THEN(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('10')
+                CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+             
+             IF         COND(&AMOUNT *LE 0) THEN(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('12')
+                CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+             
+             IF         COND(&AMOUNT *GT 999999.99) THEN(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('13')
+                CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+             
+             /* Phase 3: Call validation program */
+             CHGVAR     VAR(&PHASENUM) VALUE(3)
+             CHGVAR     VAR(&STEPNUM) VALUE(3)
+             
+             CALL       PGM(DBVALID) PARM(&CUSTID &AMOUNT +
+                          &VALIDCODE &CUSTTYPE &LOYALTYPTS)
+             
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('99')
+                CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+             
+             IF         COND(&VALIDCODE *NE '00') THEN(DO)
+                CHGVAR     VAR(&RETCODE) VALUE(&VALIDCODE)
+                IF         COND(&VALIDCODE *EQ '01') THEN(DO)
+                   CHGVAR     VAR(&WARNFLAG) VALUE('Y')
+                ENDDO
+                ELSE       CMD(DO)
+                   CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                   GOTO       CMDLBL(ERROR)
+                ENDDO
+             ENDDO
+             
+             /* Phase 4: Calculate discount */
+             CHGVAR     VAR(&PHASENUM) VALUE(4)
+             CHGVAR     VAR(&STEPNUM) VALUE(4)
+             
+             CALL       PGM(DISCCALC) PARM(&CUSTID &GROSSAMT +
+                          &CUSTTYPE &LOYALTYPTS &DISCAMT &DISCRATE)
+             
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                CHGVAR     VAR(&DISCAMT) VALUE(0)
+                CHGVAR     VAR(&DISCRATE) VALUE(0)
+                CHGVAR     VAR(&WARNFLAG) VALUE('Y')
+             ENDDO
+             
+             CHGVAR     VAR(&NETAMT) VALUE(&GROSSAMT - &DISCAMT)
+             
+             IF         COND(&NETAMT *LT 0) THEN(DO)
+                CHGVAR     VAR(&NETAMT) VALUE(0)
+                CHGVAR     VAR(&WARNFLAG) VALUE('Y')
+             ENDDO
+             
+             /* Phase 5: Complex calculations */
+             CHGVAR     VAR(&PHASENUM) VALUE(5)
+             CHGVAR     VAR(&STEPNUM) VALUE(5)
+             
+             CHGVAR     VAR(&ITERATOR) VALUE(1)
+ LOOP2:      IF         COND(&ITERATOR *LE 3) THEN(DO)
+                IF         COND(&ITERATOR *EQ 1) THEN(DO)
+                   CHGVAR     VAR(&CALCAMT1) VALUE(&NETAMT * 1.05)
+                ENDDO
+                IF         COND(&ITERATOR *EQ 2) THEN(DO)
+                   CHGVAR     VAR(&CALCAMT2) VALUE(&CALCAMT1 * 0.98)
+                ENDDO
+                IF         COND(&ITERATOR *EQ 3) THEN(DO)
+                   CHGVAR     VAR(&CALCAMT3) VALUE(&CALCAMT2 * 1.02)
+                ENDDO
+                CHGVAR     VAR(&ITERATOR) VALUE(&ITERATOR + 1)
+                GOTO       CMDLBL(LOOP2)
+             ENDDO
+             
+             /* Phase 6: Calculate tax */
+             CHGVAR     VAR(&PHASENUM) VALUE(6)
+             CHGVAR     VAR(&STEPNUM) VALUE(6)
+             
+             CALL       PGM(TAXCALC) PARM(&NETAMT &TAXRATE +
+                          &TAXAMT &CUSTTYPE &PROCFEE)
+             
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('98')
+                CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+             
+             /* Phase 7: Additional processing */
+             CHGVAR     VAR(&PHASENUM) VALUE(7)
+             CHGVAR     VAR(&STEPNUM) VALUE(7)
+             
+             CHGVAR     VAR(&COUNTER) VALUE(1)
+ LOOP3:      IF         COND(&COUNTER *LE 4) THEN(DO)
+                CHGVAR     VAR(&TEMPAMT1) VALUE(&TAXAMT)
+                CHGVAR     VAR(&RATIO) VALUE(&COUNTER * 0.25)
+                CHGVAR     VAR(&TEMPAMT2) VALUE(&TEMPAMT1 * &RATIO)
+                CHGVAR     VAR(&TEMPAMT3) VALUE(&TEMPAMT2 + &PROCFEE)
+                CHGVAR     VAR(&COUNTER) VALUE(&COUNTER + 1)
+                GOTO       CMDLBL(LOOP3)
+             ENDDO
+             
+             CHGVAR     VAR(&FINALAMT) VALUE(&NETAMT + &TAXAMT + +
+                          &PROCFEE)
+             
+             /* Phase 8: Generate transaction ID */
+             CHGVAR     VAR(&PHASENUM) VALUE(8)
+             CHGVAR     VAR(&STEPNUM) VALUE(8)
+             
+             RTVSYSVAL  SYSVAL(QDATE) RTNVAR(&CURRDATE)
+             RTVSYSVAL  SYSVAL(QTIME) RTNVAR(&CURRTIME)
+             
+             CHGVAR     VAR(&TRANID) VALUE(&CUSTID *TCAT +
+                          &CURRDATE *TCAT &CURRTIME)
+             
+             /* Phase 9: Audit logging */
+             CHGVAR     VAR(&PHASENUM) VALUE(9)
+             CHGVAR     VAR(&STEPNUM) VALUE(9)
+             
+             CALL       PGM(AUDITLOG) PARM(&CUSTID &TRANID +
+                          &GROSSAMT &TAXAMT &FINALAMT &AUDITID)
+             
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                CHGVAR     VAR(&AUDITID) VALUE(0)
+                CHGVAR     VAR(&WARNFLAG) VALUE('Y')
+             ENDDO
+             
+             /* Phase 10: Payment processing */
+             CHGVAR     VAR(&PHASENUM) VALUE(10)
+             CHGVAR     VAR(&STEPNUM) VALUE(10)
+             
+             CALL       PGM(PYMTPROC) PARM(&CUSTID &FINALAMT +
+                          &PYMTMETH &TRANID &PROCFEE)
+             
+             MONMSG     MSGID(CPF0000) EXEC(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('97')
+                CHGVAR     VAR(&ERRORFLAG) VALUE('Y')
+                GOTO       CMDLBL(ERROR)
+             ENDDO
+             
+             /* Phase 11: Final calculations */
+             CHGVAR     VAR(&PHASENUM) VALUE(11)
+             CHGVAR     VAR(&STEPNUM) VALUE(11)
+             
+             IF         COND(&FINALAMT *GT &THRESHOLD3) THEN(DO)
+                CHGVAR     VAR(&PERCENT) VALUE(15.00)
+                CHGVAR     VAR(&LEVELNUM) VALUE(3)
+             ENDDO
+             ELSE       CMD(IF COND(&FINALAMT *GT &THRESHOLD2) +
+                          THEN(DO))
+                CHGVAR     VAR(&PERCENT) VALUE(10.00)
+                CHGVAR     VAR(&LEVELNUM) VALUE(2)
+             ENDDO
+             ELSE       CMD(IF COND(&FINALAMT *GT &THRESHOLD1) +
+                          THEN(DO))
+                CHGVAR     VAR(&PERCENT) VALUE(5.00)
+                CHGVAR     VAR(&LEVELNUM) VALUE(1)
+             ENDDO
+             ELSE       CMD(DO)
+                CHGVAR     VAR(&PERCENT) VALUE(2.00)
+                CHGVAR     VAR(&LEVELNUM) VALUE(0)
+             ENDDO
+             
+             /* Phase 12: Completion */
+             CHGVAR     VAR(&PHASENUM) VALUE(12)
+             CHGVAR     VAR(&STEPNUM) VALUE(12)
+             
+             CHGVAR     VAR(&COMPLETFLG) VALUE('Y')
+             CHGVAR     VAR(&SUCCESSFLG) VALUE('Y')
+             
+             IF         COND(&ERRORFLAG *EQ 'Y') THEN(DO)
+                CHGVAR     VAR(&RETCODE) VALUE('98')
+             ENDDO
+             ELSE       CMD(IF COND(&WARNFLAG *EQ 'Y') THEN(DO))
+                IF         COND(&RETCODE *EQ '00') THEN(DO)
+                   CHGVAR     VAR(&RETCODE) VALUE('01')
+                ENDDO
+             ENDDO
+             
+             GOTO       CMDLBL(ENDPGM)
+             
+ ERROR:      CHGVAR     VAR(&FINALAMT) VALUE(0)
+             CHGVAR     VAR(&SUCCESSFLG) VALUE('N')
+             
+ ENDPGM:     ENDPGM
