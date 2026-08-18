@@ -5,7 +5,7 @@
              /* Purpose: Orchestrate payment processing workflow  */
              /* ================================================== */
              
-             DCL        VAR(&CUSTID) TYPE(*CHAR) LEN(10)
+             DCL        VAR(&CUSTID) TYPE(*CHAR) LEN(11)
              DCL        VAR(&AMOUNT) TYPE(*DEC) LEN(15 2)
              DCL        VAR(&FINALAMT) TYPE(*DEC) LEN(15 2)
              DCL        VAR(&RETCODE) TYPE(*CHAR) LEN(2)
